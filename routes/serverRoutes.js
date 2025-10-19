@@ -49,8 +49,8 @@ router.post('/scan/range', async (req, res) => {
         });
     }
     
-    if (batchSize > 200) {
-        return res.status(400).json({ message: 'Batch Size auf maximal 200 beschränkt, um Systemüberlastung zu vermeiden.' });
+    if (batchSize > 500) {
+        return res.status(400).json({ message: 'Batch Size auf maximal 500 beschränkt, um Systemüberlastung zu vermeiden.' });
     }
 
     // Starte den Scan und übergib batchSize
