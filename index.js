@@ -1,4 +1,4 @@
-// index.js (aktualisiert)
+// index.js
 
 require('dotenv').config();
 const express = require('express');
@@ -8,30 +8,31 @@ const serverRoutes = require('./routes/serverRoutes');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Middleware
-// NEU: Füge URL-Encoded-Parser hinzu, um x-www-form-urlencoded zu verarbeiten
-app.use(express.urlencoded({ extended: true })); // <-- DIES HINZUFÜGEN
-app.use(express.json()); // Behält den JSON-Parser für zukünftige JSON-Anfragen bei
+// --- Middleware ---
+// Add URL-encoded parser to handle x-www-form-urlencoded requests
+app.use(express.urlencoded({ extended: true }));
+// Add JSON parser for handling JSON requests
+app.use(express.json());
 
-// Datenbank-Verbindung (bleibt gleich)
+// --- Database Connection ---
 mongoose.connect(process.env.MONGO_URI)
     .then(() => {
-        console.log('📦 MongoDB erfolgreich verbunden.');
+        console.log('📦 Successfully connected to MongoDB.');
     })
     .catch((err) => {
-        console.error('❌ MongoDB Verbindungsfehler:', err);
+        console.error('❌ MongoDB connection error:', err);
         process.exit(1);
     });
 
-// API Routen einbinden (bleibt gleich)
+// --- API Routes ---
 app.use('/api/servers', serverRoutes);
 
-// Basis-Route (bleibt gleich)
+// --- Base Route ---
 app.get('/', (req, res) => {
-    res.send('Minecraft Server Scanner API läuft. Nutze /api/servers.');
+    res.send('Minecraft Server Scanner API is running. Use /api/servers to access the data.');
 });
 
-// Server starten (bleibt gleich)
+// --- Server Startup ---
 app.listen(PORT, () => {
-    console.log(`🚀 Server läuft auf http://localhost:${PORT}`);
+    console.log(`🚀 Server is running on http://localhost:${PORT}`);
 });

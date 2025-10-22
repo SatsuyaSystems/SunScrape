@@ -3,10 +3,15 @@
 const express = require('express');
 const router = express.Router();
 const Server = require('../models/Server');
-const { startSequentialScan } = require('../lib/scanner'); 
+const { startRangeScan } = require('../lib/scanner');
 
-// --- Öffentliche API-Routen ---
+// --- Public API Routes ---
 
+/**
+ * @route GET /api/servers
+ * @description Get a list of online Minecraft servers, sorted by player count.
+ * @access Public
+ */
 router.get('/', async (req, res) => {
     try {
         const servers = await Server.find({ online: true })
@@ -14,51 +19,56 @@ router.get('/', async (req, res) => {
                                      .limit(100);
         res.json(servers);
     } catch (err) {
-        console.error(err);
-        res.status(500).json({ message: 'Fehler beim Abrufen der Serverdaten' });
+        console.error("Error fetching server data:", err);
+        res.status(500).json({ message: 'Error fetching server data' });
     }
 });
 
+/**
+ * @route GET /api/servers/:ip
+ * @description Get details for a specific server by its IP address.
+ * @access Public
+ */
 router.get('/:ip', async (req, res) => {
     try {
         const server = await Server.findOne({ ip: req.params.ip });
         if (!server) {
-            return res.status(404).json({ message: 'Server nicht gefunden' });
+            return res.status(404).json({ message: 'Server not found' });
         }
         res.json(server);
     } catch (err) {
-        console.error(err);
-        res.status(500).json({ message: 'Fehler beim Abrufen der Serverdetails' });
+        console.error("Error fetching server details:", err);
+        res.status(500).json({ message: 'Error fetching server details' });
     }
 });
 
-// --- Controller-Route für den Scan ---
+// --- Scan Controller Route ---
 
-// POST /api/servers/scan/range - Startet den Batch-Scan
+/**
+ * @route POST /api/servers/scan/range
+ * @description Start a batch scan for a range of IP addresses.
+ * @access Public
+ */
 router.post('/scan/range', async (req, res) => {
-    
-    const startIp = req.body.startIp; 
-    const endIp = req.body.endIp;     
-    // Lese batchSize mit Standardwert 25
-    const batchSize = req.body.batchSize || 25; 
+    const { startIp, endIp, batchSize = 25 } = req.body;
 
     if (!startIp || !endIp) {
         return res.status(400).json({ 
-            message: 'Fehler: Start- und End-IP müssen im Body enthalten sein. Bitte Body-Typ auf RAW/JSON setzen.', 
+            message: 'Error: startIp and endIp must be provided in the request body.', 
             example: { startIp: "5.9.0.0", endIp: "5.9.255.255", batchSize: 100 }
         });
     }
     
     if (batchSize > 500) {
-        return res.status(400).json({ message: 'Batch Size auf maximal 500 beschränkt, um Systemüberlastung zu vermeiden.' });
+        return res.status(400).json({ message: 'Batch size is limited to a maximum of 500 to prevent system overload.' });
     }
 
-    // Starte den Scan und übergib batchSize
-    startSequentialScan(startIp, endIp, batchSize) 
-        .catch(error => console.error("Fehler im Batch-Scan:", error));
+    // Start the scan in the background
+    startRangeScan(startIp, endIp, parseInt(batchSize, 10))
+        .catch(error => console.error("Error during batch scan:", error));
     
-    res.json({ 
-        message: `Kontrollierter Batch-Scan (Batch: ${batchSize}) von ${startIp} bis ${endIp} im Hintergrund gestartet. Ergebnisse in Konsole & scan.log.` 
+    res.status(202).json({ 
+        message: `Controlled batch scan (Batch Size: ${batchSize}) from ${startIp} to ${endIp} started in the background. See console & scan.log for results.` 
     });
 });
 
